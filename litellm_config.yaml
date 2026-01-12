@@ -1,0 +1,14 @@
+litellm_settings:
+  callbacks:
+    - langfuse_otel
+
+model_list:
+  - model_name: mimo-v2-flash-free
+    litellm_params:
+      model: openrouter/xiaomi/mimo-v2-flash:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: xiaomi/mimo-v2-flash:free
+    litellm_params:
+      model: openrouter/xiaomi/mimo-v2-flash:free
+      api_key: os.environ/OPENROUTER_API_KEY
