@@ -1,12 +1,36 @@
 services:
+  litellm-postgres:
+    image: docker.io/postgres:17
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm
+      POSTGRES_DB: litellm
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - litellm_postgres_data:/var/lib/postgresql/data
+
   litellm-proxy:
     image: docker.litellm.ai/berriai/litellm:main-latest
     restart: always
+    depends_on:
+      litellm-postgres:
+        condition: service_healthy
     ports:
       - 127.0.0.1:${LITELLM_PORT:-4000}:4000
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-local-dev}
+      UI_USERNAME: admin
+      UI_PASSWORD: langfuse1
+      DATABASE_URL: postgresql://litellm:litellm@litellm-postgres:5432/litellm
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_OTEL_HOST: ${LANGFUSE_OTEL_HOST:-http://localhost:3000}
@@ -19,3 +43,7 @@ services:
       - "0.0.0.0"
       - "--port"
       - "4000"
+
+volumes:
+  litellm_postgres_data:
+    driver: local

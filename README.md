@@ -36,20 +36,70 @@ Fill at least:
 
 ### 2) Start the stack
 
+#### Port conflicts
+
+This stack publishes only a few ports on the host:
+
+- Langfuse UI: `127.0.0.1:${LANGFUSE_PORT:-3000}`
+- LiteLLM Proxy: `127.0.0.1:${LITELLM_PORT:-4000}`
+- MinIO S3 API: `127.0.0.1:${MINIO_S3_PORT:-9090}`
+
+If any of these are already in use, change them in `.env` (copied from `.env.example`) and restart the stack.
+
+(If you change `LANGFUSE_PORT`, `NEXTAUTH_URL` is set automatically by `docker-compose.yml` to match.)
+
 ```bash
 # Preferred
-# docker compose up
+# docker compose up -d
 
 # Fallback
-docker-compose up
+docker-compose up -d
 ```
 
-### 3) Open UIs
+### 3) Log into Langfuse (default admin)
 
-- Langfuse UI: http://localhost:3000
-- LiteLLM Proxy: http://localhost:4000
+This repo hardcodes the initial Langfuse admin user for local dev:
 
-### 4) Send a test request to LiteLLM
+- Email: `admin@local.test`
+- Password: `langfuse1`
+
+Important:
+- Langfuse init via `LANGFUSE_INIT_*` env vars only runs when `LANGFUSE_INIT_ORG_ID` is set (this repo sets it in `docker-compose.yml`).
+- If you already initialized Langfuse before and want a clean reset, stop the stack and remove volumes:
+
+```bash
+docker-compose down -v
+```
+
+### 4) Open UIs
+
+- Langfuse UI: http://localhost:${LANGFUSE_PORT:-3000}
+- LiteLLM Proxy: http://localhost:${LITELLM_PORT:-4000}
+- LiteLLM UI: http://localhost:${LITELLM_PORT:-4000}/ui
+
+LiteLLM UI login (hardcoded in `docker-compose.yml`):
+
+- Username: `admin`
+- Password: `langfuse1`
+
+### 5) Create Langfuse project keys, then restart LiteLLM
+
+LiteLLM needs the Langfuse **project** keys to send OTEL traces:
+
+- `LANGFUSE_PUBLIC_KEY`
+- `LANGFUSE_SECRET_KEY`
+
+Flow:
+
+1) In Langfuse UI, create/select a project and copy its keys
+2) Put them into `.env`
+3) Recreate only `litellm-proxy` so the new env vars take effect:
+
+```bash
+docker-compose up -d --force-recreate litellm-proxy
+```
+
+### 6) Send a test request to LiteLLM
 
 The config ships with sample model names (see `litellm_config.yaml`).
 
